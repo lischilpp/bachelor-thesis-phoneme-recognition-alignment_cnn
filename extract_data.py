@@ -7,6 +7,7 @@ from pathlib import Path
 
 timit_path = Path('timit/')
 timit_data_path = timit_path / 'data'
+data_type = "test"
 
 
 class Phoneme():
@@ -45,11 +46,11 @@ for symbol in phoneme_symbols:
 
 # get paths of recordings
 recording_paths = []
-with open('timit/train_data.csv') as file:
+with open(f'timit/{data_type}_data.csv') as file:
     next(file)
     reader = csv.reader(file, delimiter=',')
     for row in reader:
-        if row[1] == 'TRAIN' and row[10] == 'TRUE':
+        if row[1] == data_type.upper() and row[10] == 'TRUE':
             path = row[5]
             path_no_ext = path[0:path.index('.')]
             recording_paths.append(path_no_ext)
@@ -68,7 +69,6 @@ for path in recording_paths:
         continue
     framerate = spf.getframerate()
     signal = np.frombuffer(spf.readframes(-1), np.int16)
-    #signal = np.fromstring(spf.readframes(-1), "Int16")
     path_array = path.split('/')
     speaker_id = path_array[-2]
     filename = path_array[-1]
@@ -80,7 +80,7 @@ for path in recording_paths:
         phon_signal = signal[phon.start:phon.end]
         plt.axis("off")
         plt.plot(phon_signal, color="black")
-        save_path = f'img/train/{phon.symbol}/{underscored_path}.png'
+        save_path = f'img/{data_type}/{phon.symbol}/{underscored_path}.png'
         # save_path = f'img/{phon.symbol}{i}.png'
         plt.savefig(save_path, bbox_inches='tight')
         plt.cla()

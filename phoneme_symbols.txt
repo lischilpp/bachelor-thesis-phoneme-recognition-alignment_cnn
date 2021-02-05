@@ -50,7 +50,3 @@ ax
 ix
 axr
 ax-h
-pau
-epi
-1
-2
