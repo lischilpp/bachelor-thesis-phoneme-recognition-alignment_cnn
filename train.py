@@ -1,27 +1,30 @@
 import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
 from tensorflow.keras.callbacks import EarlyStopping
+import tensorflow_hub as hub
+from sklearn.utils import class_weight
 import matplotlib.pyplot as plt
+import numpy as np
 from pathlib import Path
 import os
+from config import *
 
 if len(tf.config.list_physical_devices('GPU')) >= 1:
     print("GPU is available")
 else:
     print("GPU not available")
 
-data_dir = Path('img/')
+data_dir = DIRPATH_DATASET/'train'
 
-input_width = 515
-input_height = 389
+input_width = 299
+input_height = 299
 input_size = (input_width, input_height)
 batch_size = 32
 
-# (train_images, train_labels), (test_images,
-#                                test_labels) = datasets.cifar10.load_data()
+model_url, pixels = (
+    "https://tfhub.dev/google/imagenet/inception_v3/feature_vector/4", 299)
 
-# # Normalize pixel values to be between 0 and 1
-# train_images, test_images = train_images / 255.0, test_images / 255.0
+input_size = (pixels, pixels)
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
     data_dir,
@@ -41,37 +44,78 @@ val_ds = tf.keras.preprocessing.image_dataset_from_directory(
     batch_size=batch_size,
 )  # color_mode='grayscale')
 
+num_classes = len(train_ds.class_names)
 
+do_fine_tuning = True
+print("Building model with", model_url)
 model = tf.keras.Sequential([
-    layers.experimental.preprocessing.Rescaling(
-        1./255, input_shape=(input_height, input_width, 3)),
-    layers.Conv2D(16, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    layers.Conv2D(32, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    layers.Conv2D(64, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    layers.Flatten(),
-    layers.Dense(128, activation='relu'),
-    layers.Dense(len(train_ds.class_names))
+    tf.keras.layers.InputLayer(input_shape=input_size + (3,)),
+    hub.KerasLayer(model_url, trainable=do_fine_tuning),
+    tf.keras.layers.Dropout(rate=0.2),
+    tf.keras.layers.Dense(len(train_ds.class_names),
+                          kernel_regularizer=tf.keras.regularizers.l2(0.0001))
 ])
 
+# model = tf.keras.Sequential([
+#     layers.experimental.preprocessing.Rescaling(
+#         1./255, input_shape=(*input_size, 1)),
+#     layers.Conv2D(16, 1, padding='same', activation='relu'),
+#     layers.MaxPooling2D(),
+#     layers.Conv2D(32, 1, padding='same', activation='relu'),
+#     layers.MaxPooling2D(),
+#     layers.Conv2D(64, 1, padding='same', activation='relu'),
+#     layers.MaxPooling2D(),
+#     layers.Flatten(),
+#     layers.Dense(128, activation='relu'),
+#     layers.Dense(len(train_ds.class_names))
+# ])
+
+
+model.build([None, *input_size, 3])
 model.summary()
+
 
 model.compile(optimizer='adam',
               loss=tf.keras.losses.SparseCategoricalCrossentropy(
                   from_logits=True),
               metrics=['accuracy'])
 
+AUTOTUNE = tf.data.AUTOTUNE
+
+train_ds = train_ds.shuffle(100).prefetch(buffer_size=AUTOTUNE)
+val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
+
 earlystop_callback = EarlyStopping(
     monitor='val_accuracy',
-    min_delta=0.0001)
+    min_delta=0.0001,
+    patience=1)
 
-checkpoint_path = 'checkpoint/cp.ckpt'
-checkpoint_dir = os.path.dirname(checkpoint_path)
+checkpoint_dir = Path('./checkpoint')
+checkpoint_path = checkpoint_dir / 'cp.ckpt'
+
+if checkpoint_dir.exists():
+    model.load_weights(checkpoint_path)
+    print('loaded from checkpoint')
 
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  save_weights_only=True)
+
+class_weights = None
+
+class_indices = []
+i = 0
+for class_name in sorted(os.listdir(DIRPATH_DATASET)):
+    image_count = len([f for f in os.listdir(
+        DIRPATH_DATASET / class_name)])
+    class_indices += [i] * image_count
+    i += 1
+
+class_weights = class_weight.compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(class_indices),
+    y=class_indices)
+
+class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
 hist = model.fit(
     train_ds,

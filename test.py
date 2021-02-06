@@ -2,10 +2,10 @@ from pathlib import Path
 from math import floor
 import functools
 import numpy as np
-
 import tensorflow as tf
 from tensorflow import keras
 import matplotlib.pyplot as plt
+from config import *
 
 
 def format_percentage2(n):
@@ -19,24 +19,25 @@ input_height = 389
 input_size = (input_width, input_height)
 batch_size = 32
 
+input_size = (299, 299)
 
-img_dir = Path('img/test')
 
-ds = tf.keras.preprocessing.image_dataset_from_directory(
-    img_dir,
+data_dir = DIRPATH_DATASET/'test'
+
+test_ds = tf.keras.preprocessing.image_dataset_from_directory(
+    data_dir,
     seed=123,
     image_size=input_size,
-    batch_size=batch_size)
+    batch_size=batch_size,
+)  # color_mode='grayscale')
 
 
-test_ds = ds.take(100)
+class_names = test_ds.class_names
 
-class_names = ds.class_names
+# test_ds = ds.take(100)
 
 predicted_indices = []
 actual_indices = []
-
-num_batches = 100  # sum([1 for _ in test_ds])
 
 i = 1
 for images, labels in test_ds:
@@ -46,7 +47,7 @@ for images, labels in test_ds:
     for predicted, actual in zip(predicted_list, labels_list):
         predicted_indices.append(predicted)
         actual_indices.append(actual)
-    print(f'batch {i}/{num_batches}')
+    print(f'batch {i}')
     i += 1
 
 classification_counts = [[0 for _ in class_names]

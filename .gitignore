@@ -1,5 +1,7 @@
 timit/
 img/
+img2/
 checkpoint/
 saved_model/
 accuracies.csv
+__pycache__

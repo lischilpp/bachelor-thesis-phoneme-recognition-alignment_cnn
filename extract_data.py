@@ -79,10 +79,14 @@ for path in recording_paths:
             continue
         phon_signal = signal[phon.start:phon.end]
         plt.axis("off")
+        plt.tick_params(left=False, labelleft=False)  # remove ticks
+        plt.box(False)  # remove box
         plt.plot(phon_signal, color="black")
+        fig.set_size_inches(2.99, 2.99)
         save_path = f'img/{data_type}/{phon.symbol}/{underscored_path}.png'
         # save_path = f'img/{phon.symbol}{i}.png'
-        plt.savefig(save_path, bbox_inches='tight')
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=100)
         plt.cla()
         i += 1
 plt.close(fig)
