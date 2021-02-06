@@ -29,7 +29,8 @@ train_ds = tf.keras.preprocessing.image_dataset_from_directory(
     subset="training",
     seed=123,
     image_size=input_size,
-    batch_size=batch_size)
+    batch_size=batch_size,
+)  # color_mode='grayscale')
 
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
     data_dir,
@@ -37,19 +38,24 @@ val_ds = tf.keras.preprocessing.image_dataset_from_directory(
     subset="validation",
     seed=123,
     image_size=input_size,
-    batch_size=batch_size)
+    batch_size=batch_size,
+)  # color_mode='grayscale')
 
 
-model = models.Sequential()
-model.add(layers.Conv2D(32, (3, 3), activation='relu',
-                        input_shape=(input_width, input_height, 3)))
-model.add(layers.MaxPooling2D((2, 2)))
-model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-model.add(layers.MaxPooling2D((2, 2)))
-model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-model.add(layers.Flatten())
-model.add(layers.Dense(64, activation='relu'))
-model.add(layers.Dense(10))
+model = tf.keras.Sequential([
+    layers.experimental.preprocessing.Rescaling(
+        1./255, input_shape=(input_height, input_width, 3)),
+    layers.Conv2D(16, 3, padding='same', activation='relu'),
+    layers.MaxPooling2D(),
+    layers.Conv2D(32, 3, padding='same', activation='relu'),
+    layers.MaxPooling2D(),
+    layers.Conv2D(64, 3, padding='same', activation='relu'),
+    layers.MaxPooling2D(),
+    layers.Flatten(),
+    layers.Dense(128, activation='relu'),
+    layers.Dense(len(train_ds.class_names))
+])
+
 model.summary()
 
 model.compile(optimizer='adam',
