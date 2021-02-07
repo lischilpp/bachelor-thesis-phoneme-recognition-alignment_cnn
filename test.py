@@ -34,7 +34,7 @@ test_ds = tf.keras.preprocessing.image_dataset_from_directory(
 
 class_names = test_ds.class_names
 
-# test_ds = ds.take(100)
+test_ds = test_ds.take(100)
 
 predicted_indices = []
 actual_indices = []

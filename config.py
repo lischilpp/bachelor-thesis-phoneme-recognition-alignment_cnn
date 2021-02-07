@@ -1,3 +1,3 @@
 from pathlib import Path
 
-DIRPATH_DATASET = Path('img/')
+DIRPATH_DATASET = Path('img3/')

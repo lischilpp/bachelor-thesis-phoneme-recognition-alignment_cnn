@@ -7,7 +7,7 @@ from pathlib import Path
 
 timit_path = Path('timit/')
 timit_data_path = timit_path / 'data'
-data_type = "test"
+data_type = "train"
 
 
 class Phoneme():
