@@ -1,7 +1,5 @@
 timit/
 img/
-img2/
-img3/
 checkpoint/
 saved_model/
 accuracies.csv

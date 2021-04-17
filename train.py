@@ -1,9 +1,7 @@
 import tensorflow as tf
-from tensorflow.keras import datasets, layers, models
 from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow_hub as hub
 from sklearn.utils import class_weight
-import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import os
@@ -82,7 +80,7 @@ model.compile(optimizer='adam',
 
 AUTOTUNE = tf.data.AUTOTUNE
 
-train_ds = train_ds.shuffle(100).prefetch(buffer_size=AUTOTUNE)
+train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
 val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
 
 # earlystop_callback = EarlyStopping(
@@ -97,31 +95,31 @@ if checkpoint_dir.exists():
     model.load_weights(checkpoint_path)
     print('loaded from checkpoint')
 
-# cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-#                                                  save_weights_only=True)
+cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                                 save_weights_only=True)
 
-# class_weights = None
+class_weights = None
 
-# class_indices = []
-# i = 0
-# for class_name in sorted(os.listdir(DIRPATH_DATASET)):
-#     image_count = len([f for f in os.listdir(
-#         DIRPATH_DATASET / class_name)])
-#     class_indices += [i] * image_count
-#     i += 1
+class_indices = []
+i = 0
+for class_name in sorted(os.listdir(data_dir)):
+    image_count = len([f for f in os.listdir(
+        data_dir / class_name)])
+    class_indices += [i] * image_count
+    i += 1
 
-# class_weights = class_weight.compute_class_weight(
-#     class_weight='balanced',
-#     classes=np.unique(class_indices),
-#     y=class_indices)
+class_weights = class_weight.compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(class_indices),
+    y=class_indices)
 
-# class_weights = {i: class_weights[i] for i in range(len(class_weights))}
+class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
-# hist = model.fit(
-#     train_ds,
-#     validation_data=val_ds,
-#     epochs=300,
-#     callbacks=[cp_callback]
-# ).history
+hist = model.fit(
+    train_ds,
+    validation_data=val_ds,
+    epochs=300,
+    callbacks=[cp_callback]
+).history
 
 model.save("saved_model")

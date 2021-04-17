@@ -4,10 +4,12 @@ import wave
 import sys
 import csv
 from pathlib import Path
+from scipy import signal as sksignal
+from scipy.io import wavfile
 
 timit_path = Path('timit/')
 timit_data_path = timit_path / 'data'
-data_type = "train"
+data_type = "test"
 
 
 class Phoneme():
@@ -57,7 +59,9 @@ with open(f'timit/{data_type}_data.csv') as file:
             # break
 
 i = 0
-fig = plt.figure()
+fig, ax = plt.subplots(1)
+fig.subplots_adjust(left=0,right=1,bottom=0,top=1)
+ax.axis('off')
 # create phoneme images
 for path in recording_paths:
     wav_path = timit_data_path / f'{path}.WAV.wav'
@@ -73,6 +77,7 @@ for path in recording_paths:
     speaker_id = path_array[-2]
     filename = path_array[-1]
     underscored_path = '_'.join(path_array)
+    cmap = plt.get_cmap('inferno')
 
     for phon in phonemes:
         if not phon.symbol in phoneme_symbols:
@@ -81,14 +86,20 @@ for path in recording_paths:
         plt.axis("off")
         plt.tick_params(left=False, labelleft=False)  # remove ticks
         plt.box(False)  # remove box
-        plt.plot(phon_signal, color="black")
+        #frequencies, times, spectrogram = sksignal.spectrogram(phon_signal, framerate)
+        #plt.pcolormesh(times, frequencies, spectrogram)
+
+        
+        pxx, freqs, bins, im = ax.specgram(phon_signal, NFFT=32, noverlap=16, cmap=cmap, scale='dB')
+
+        #plt.plot(phon_signal, color="black")
         fig.set_size_inches(2.99, 2.99)
         save_path = f'img/{data_type}/{phon.symbol}/{underscored_path}.png'
-        # save_path = f'img/{phon.symbol}{i}.png'
-        plt.tight_layout()
-        plt.savefig(save_path, dpi=100)
+        #save_path = f'img/{phon.symbol}{i}.png'
+        fig.savefig(save_path, dpi=100)
         plt.cla()
         i += 1
+        
 plt.close(fig)
 
 print('done')

@@ -34,7 +34,7 @@ test_ds = tf.keras.preprocessing.image_dataset_from_directory(
 
 class_names = test_ds.class_names
 
-test_ds = test_ds.take(100)
+#test_ds = test_ds.take(100)
 
 predicted_indices = []
 actual_indices = []
@@ -117,12 +117,14 @@ def compare(x1, x2):
 accuracies = sorted(
     accuracies, key=functools.cmp_to_key(compare))
 
+total_accuracy = format_percentage2(correct_predictions / total_predictions)
+
 # write result to output file
 
-print(
-    f'accuracy: {format_percentage2(correct_predictions / total_predictions)}%')
+print(f'accuracy: {total_accuracy}%')
 
 f = open('accuracies.csv', "w")
+f.write(f'{total_accuracy}%,Σ,""\n')
 
 for entry in accuracies:
     f.write(
