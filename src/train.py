@@ -43,7 +43,7 @@ print("Building model with", model_url)
 model = tf.keras.Sequential([
     tf.keras.layers.InputLayer(input_shape=input_size + (3,)),
     hub.KerasLayer(model_url, trainable=do_fine_tuning),
-    tf.keras.layers.Dropout(rate=0.4),
+    tf.keras.layers.Dropout(rate=0.5),
     tf.keras.layers.Dense(len(train_ds.class_names),
                           kernel_regularizer=tf.keras.regularizers.l2(0.0001))
 ])
@@ -57,13 +57,13 @@ model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
                   from_logits=True),
               metrics=['accuracy'])
 
-AUTOTUNE = tf.data.AUTOTUNE
+# AUTOTUNE = tf.data.AUTOTUNE
 
-train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
-val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
+# train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
+# val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
 
 earlystop_callback = EarlyStopping(
-    monitor='val_accuracy',
+    monitor='val_loss',
     min_delta=0.0001,
     patience=5)
 
@@ -76,29 +76,33 @@ if checkpoint_dir.exists():
 
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  save_weights_only=True)
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./logs")
 
-# class_weights = None
 
-# class_indices = []
-# i = 0
-# for class_name in sorted(os.listdir(data_dir)):
-#     image_count = len([f for f in os.listdir(
-#         data_dir / class_name)])
-#     class_indices += [i] * image_count
-#     i += 1
+class_weights = None
 
-# class_weights = class_weight.compute_class_weight(
-#     class_weight='balanced',
-#     classes=np.unique(class_indices),
-#     y=class_indices)
+class_indices = []
+i = 0
+for class_name in sorted(os.listdir(TRAIN_PATH)):
+    image_count = sum([1 for _ in os.listdir(
+        TRAIN_PATH / class_name)])
+    class_indices += [i] * image_count
+    i += 1
 
-# class_weights = {i: class_weights[i] for i in range(len(class_weights))}
+class_weights = class_weight.compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(class_indices),
+    y=class_indices)
+
+class_weights = {i: class_weights[i] for i in range(len(class_weights))}
+
 
 hist = model.fit(
     train_ds,
     validation_data=val_ds,
     epochs=300,
-    callbacks=[cp_callback]
+    class_weight=class_weights,
+    callbacks=[cp_callback, tensorboard_callback]
 ).history
 
 model.save("saved_model")

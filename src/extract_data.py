@@ -66,10 +66,7 @@ def create_spectrograms_from_audio_paths(audio_paths, save_dir):
             plt.axis("off")
             plt.tick_params(left=False, labelleft=False)
             plt.box(False)
-            pxx, freqs, bins, im = ax.specgram(phon_signal, NFFT=32, noverlap=16, scale='dB', cmap='inferno')
-            # mel_spect = librosa.feature.melspectrogram(y=phon_signal, sr=sampling_rate, n_fft=128, n_mels=40, hop_length=32)
-            # mel_spect = librosa.power_to_db(mel_spect, ref=np.max)
-            # librosa.display.specshow(mel_spect, y_axis='mel', fmax=8000, x_axis='time');        
+            pxx, freqs, bins, im = ax.specgram(phon_signal, NFFT=32, noverlap=16, scale='dB', cmap='inferno')  
             fig.set_size_inches(2.99, 2.99)
             save_path = save_dir / f'{phon.symbol}/{underscored_path}.png'
             fig.savefig(save_path, dpi=100)
