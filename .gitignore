@@ -1,7 +1,4 @@
-timit/
-img/
-checkpoint/
-saved_model/
-accuracies.csv
+data/
+out/
 __pycache__
 .vscode
